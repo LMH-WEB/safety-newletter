@@ -32,7 +32,8 @@ ENV_PATH = Path(__file__).parent / ".env"
 # ---------------------------------------------------------------------------
 # 전역 상태
 # ---------------------------------------------------------------------------
-_state = {
+from typing import Any
+_state: dict[str, Any] = {
     "articles": [],          # 마지막으로 수집된 기사 목록
     "last_sent": None,       # 마지막 발송 시각 (datetime)
     "scheduler_on": False,   # 스케줄러 실행 여부
@@ -301,5 +302,7 @@ def _write_env(fields: dict[str, str]) -> None:
 # 엔트리포인트
 # ---------------------------------------------------------------------------
 if __name__ == "__main__":
+    import os
     start_scheduler()
-    app.run(host="0.0.0.0", port=5000, debug=False, use_reloader=False)
+    port = int(os.environ.get("PORT", 5000))
+    app.run(host="0.0.0.0", port=port, debug=False, use_reloader=False)
