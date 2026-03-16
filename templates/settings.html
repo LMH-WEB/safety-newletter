@@ -1,0 +1,174 @@
+{% extends "base.html" %}
+
+{% block title %}설정 — 건설안전 뉴스레터{% endblock %}
+{% block page_title %}설정{% endblock %}
+
+{% block content %}
+
+{% if saved %}
+<div class="alert alert-success d-flex align-items-center mb-4" role="alert">
+  <i class="bi bi-check-circle-fill me-2"></i>
+  설정이 저장되었습니다.
+</div>
+{% endif %}
+
+<form method="POST" action="/settings">
+<div class="row g-4">
+
+  <!-- SMTP 설정 -->
+  <div class="col-12 col-lg-6">
+    <div class="card border-0 shadow-sm h-100" style="border-radius:12px;">
+      <div class="card-header bg-white py-3 px-4" style="border-radius:12px 12px 0 0;border-bottom:1px solid #e8ecf0;">
+        <span style="font-weight:700;font-size:15px;color:#1e293b;">
+          <i class="bi bi-envelope-at me-2 text-primary"></i>SMTP 이메일 설정
+        </span>
+      </div>
+      <div class="card-body px-4 py-3">
+
+        <div class="mb-3">
+          <label class="form-label fw-semibold" style="font-size:13px;">SMTP 서버</label>
+          <input type="text" name="smtp_host" class="form-control" value="{{ cfg.SMTP_HOST }}"
+                 placeholder="smtp.gmail.com">
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label fw-semibold" style="font-size:13px;">포트</label>
+          <input type="number" name="smtp_port" class="form-control" value="{{ cfg.SMTP_PORT }}"
+                 placeholder="587" style="max-width:120px;">
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label fw-semibold" style="font-size:13px;">계정 (이메일)</label>
+          <input type="email" name="smtp_user" class="form-control" value="{{ cfg.SMTP_USER }}"
+                 placeholder="your@gmail.com">
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label fw-semibold" style="font-size:13px;">
+            비밀번호
+            <span class="text-muted fw-normal" style="font-size:11px;">(Gmail은 앱 비밀번호 사용)</span>
+          </label>
+          <div class="input-group">
+            <input type="password" name="smtp_password" id="pwd-input" class="form-control"
+                   value="{{ cfg.SMTP_PASSWORD }}" placeholder="앱 비밀번호 입력">
+            <button type="button" class="btn btn-outline-secondary" onclick="togglePwd()">
+              <i class="bi bi-eye" id="pwd-eye"></i>
+            </button>
+          </div>
+          <div class="form-text">
+            <i class="bi bi-info-circle me-1"></i>
+            Gmail 사용 시 <a href="https://myaccount.google.com/apppasswords" target="_blank">앱 비밀번호</a>를 발급받아 입력하세요.
+            (2단계 인증 필요)
+          </div>
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label fw-semibold" style="font-size:13px;">발신자 이메일</label>
+          <input type="email" name="sender_email" class="form-control" value="{{ cfg.SENDER_EMAIL }}"
+                 placeholder="sender@gmail.com">
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- 수신자 & 크롤링 설정 -->
+  <div class="col-12 col-lg-6">
+
+    <!-- 수신자 -->
+    <div class="card border-0 shadow-sm mb-4" style="border-radius:12px;">
+      <div class="card-header bg-white py-3 px-4" style="border-radius:12px 12px 0 0;border-bottom:1px solid #e8ecf0;">
+        <span style="font-weight:700;font-size:15px;color:#1e293b;">
+          <i class="bi bi-people me-2 text-primary"></i>수신자
+        </span>
+      </div>
+      <div class="card-body px-4 py-3">
+        <div class="mb-1">
+          <label class="form-label fw-semibold" style="font-size:13px;">수신자 이메일 목록</label>
+          <textarea name="recipient_emails" class="form-control" rows="3"
+                    placeholder="recipient1@example.com, recipient2@example.com">{{ cfg.RECIPIENT_EMAILS | join(', ') }}</textarea>
+          <div class="form-text">여러 명인 경우 콤마(,)로 구분</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 크롤링 / 뉴스레터 -->
+    <div class="card border-0 shadow-sm mb-4" style="border-radius:12px;">
+      <div class="card-header bg-white py-3 px-4" style="border-radius:12px 12px 0 0;border-bottom:1px solid #e8ecf0;">
+        <span style="font-weight:700;font-size:15px;color:#1e293b;">
+          <i class="bi bi-sliders me-2 text-primary"></i>수집 설정
+        </span>
+      </div>
+      <div class="card-body px-4 py-3">
+        <div class="row g-3">
+          <div class="col-6">
+            <label class="form-label fw-semibold" style="font-size:13px;">수집 기간 (개월)</label>
+            <input type="number" name="crawl_months" class="form-control" min="1" max="12"
+                   value="{{ cfg.CRAWL_MONTHS }}">
+          </div>
+          <div class="col-6">
+            <label class="form-label fw-semibold" style="font-size:13px;">기사 수 (Top N)</label>
+            <input type="number" name="top_news_count" class="form-control" min="5" max="50"
+                   value="{{ cfg.TOP_NEWS_COUNT }}">
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 스케줄 -->
+    <div class="card border-0 shadow-sm" style="border-radius:12px;">
+      <div class="card-header bg-white py-3 px-4" style="border-radius:12px 12px 0 0;border-bottom:1px solid #e8ecf0;">
+        <span style="font-weight:700;font-size:15px;color:#1e293b;">
+          <i class="bi bi-calendar-week me-2 text-primary"></i>발송 스케줄
+        </span>
+      </div>
+      <div class="card-body px-4 py-3">
+        <div class="row g-3">
+          <div class="col-6">
+            <label class="form-label fw-semibold" style="font-size:13px;">발송 요일</label>
+            <select name="schedule_day" class="form-select" disabled>
+              <option value="monday" selected>매주 월요일</option>
+            </select>
+            <div class="form-text">현재 월요일 고정</div>
+          </div>
+          <div class="col-6">
+            <label class="form-label fw-semibold" style="font-size:13px;">발송 시각</label>
+            <input type="time" name="schedule_time" class="form-control"
+                   value="{{ cfg.SCHEDULE_TIME }}" disabled>
+            <div class="form-text">현재 09:00 고정</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- 저장 버튼 -->
+<div class="d-flex justify-content-end mt-4 gap-2">
+  <a href="/" class="btn btn-outline-secondary">
+    <i class="bi bi-arrow-left me-1"></i> 대시보드로
+  </a>
+  <button type="submit" class="btn btn-primary px-4">
+    <i class="bi bi-floppy me-1"></i> 설정 저장
+  </button>
+</div>
+
+</form>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  function togglePwd() {
+    const input = document.getElementById('pwd-input');
+    const eye = document.getElementById('pwd-eye');
+    if (input.type === 'password') {
+      input.type = 'text';
+      eye.className = 'bi bi-eye-slash';
+    } else {
+      input.type = 'password';
+      eye.className = 'bi bi-eye';
+    }
+  }
+</script>
+{% endblock %}

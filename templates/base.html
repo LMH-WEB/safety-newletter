@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}건설안전 뉴스레터{% endblock %}</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+  <style>
+    :root {
+      --sidebar-width: 220px;
+      --primary: #1a3c5e;
+      --primary-light: #2e6da4;
+    }
+    body { background: #f0f2f5; font-family: 'Apple SD Gothic Neo','Malgun Gothic',Arial,sans-serif; }
+
+    /* 사이드바 */
+    #sidebar {
+      width: var(--sidebar-width);
+      min-height: 100vh;
+      background: var(--primary);
+      position: fixed;
+      top: 0; left: 0;
+      z-index: 100;
+      display: flex;
+      flex-direction: column;
+    }
+    #sidebar .brand {
+      padding: 20px 18px 14px;
+      border-bottom: 1px solid rgba(255,255,255,.12);
+    }
+    #sidebar .brand h6 {
+      color: #fff;
+      font-size: 13px;
+      font-weight: 700;
+      margin: 0;
+      letter-spacing: .5px;
+    }
+    #sidebar .brand small { color: #a8cce8; font-size: 11px; }
+    #sidebar .nav-link {
+      color: #c8dff0;
+      padding: 10px 18px;
+      border-radius: 6px;
+      margin: 2px 8px;
+      font-size: 14px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      transition: background .15s;
+    }
+    #sidebar .nav-link:hover, #sidebar .nav-link.active {
+      background: rgba(255,255,255,.12);
+      color: #fff;
+    }
+    #sidebar .nav-link i { font-size: 16px; width: 20px; text-align: center; }
+
+    /* 메인 콘텐츠 */
+    #main-content {
+      margin-left: var(--sidebar-width);
+      min-height: 100vh;
+    }
+    .topbar {
+      background: #fff;
+      border-bottom: 1px solid #e2e8f0;
+      padding: 14px 28px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .topbar h5 { margin: 0; font-weight: 700; color: #1e293b; font-size: 17px; }
+    .content-area { padding: 24px 28px; }
+
+    /* 카드 */
+    .stat-card {
+      background: #fff;
+      border-radius: 12px;
+      padding: 20px 22px;
+      border: 1px solid #e8ecf0;
+    }
+    .stat-card .icon-box {
+      width: 44px; height: 44px;
+      border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 20px;
+    }
+    .stat-card .label { font-size: 12px; color: #94a3b8; font-weight: 600; letter-spacing: .5px; }
+    .stat-card .value { font-size: 24px; font-weight: 700; color: #1e293b; margin-top: 2px; }
+
+    /* 로그 패널 */
+    #log-panel {
+      position: fixed;
+      bottom: 0; left: var(--sidebar-width); right: 0;
+      height: 220px;
+      background: #0f172a;
+      border-top: 2px solid var(--primary-light);
+      z-index: 200;
+      display: none;
+      flex-direction: column;
+    }
+    #log-panel.show { display: flex; }
+    #log-panel .panel-header {
+      padding: 6px 14px;
+      background: #1e293b;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-shrink: 0;
+    }
+    #log-panel .panel-header span { color: #94a3b8; font-size: 12px; font-weight: 600; }
+    #log-output {
+      overflow-y: auto;
+      flex: 1;
+      padding: 8px 14px;
+      font-family: 'Consolas','Courier New',monospace;
+      font-size: 12px;
+      line-height: 1.6;
+    }
+    .log-INFO    { color: #94a3b8; }
+    .log-WARNING { color: #f59e0b; }
+    .log-ERROR   { color: #f87171; }
+
+    /* 테이블 */
+    .news-table th { font-size: 12px; color: #64748b; font-weight: 600; letter-spacing: .4px; border-bottom: 2px solid #e2e8f0; }
+    .news-table td { font-size: 13px; vertical-align: middle; }
+    .rank-badge {
+      width: 28px; height: 28px;
+      border-radius: 6px;
+      display: inline-flex; align-items: center; justify-content: center;
+      font-weight: 700; font-size: 13px;
+    }
+    .rank-1 { background: #1a3c5e; color: #fff; }
+    .rank-2 { background: #2e6da4; color: #fff; }
+    .rank-3 { background: #5b9dc9; color: #fff; }
+    .rank-other { background: #e8ecf0; color: #64748b; }
+    .source-badge {
+      background: #eaf3fb; color: #2e6da4;
+      font-size: 11px; font-weight: 600;
+      padding: 2px 7px; border-radius: 4px;
+    }
+
+    @media (max-width: 768px) {
+      #sidebar { display: none; }
+      #main-content { margin-left: 0; }
+      #log-panel { left: 0; }
+    }
+  </style>
+  {% block head %}{% endblock %}
+</head>
+<body>
+
+<!-- 사이드바 -->
+<nav id="sidebar">
+  <div class="brand">
+    <h6><i class="bi bi-shield-check me-2"></i>건설안전 뉴스레터</h6>
+    <small>자동 발송 시스템</small>
+  </div>
+  <ul class="nav flex-column mt-3">
+    <li class="nav-item">
+      <a href="/" class="nav-link {% if request.path == '/' %}active{% endif %}">
+        <i class="bi bi-speedometer2"></i> 대시보드
+      </a>
+    </li>
+    <li class="nav-item">
+      <a href="/settings" class="nav-link {% if request.path == '/settings' %}active{% endif %}">
+        <i class="bi bi-gear"></i> 설정
+      </a>
+    </li>
+  </ul>
+</nav>
+
+<!-- 메인 -->
+<div id="main-content">
+  <div class="topbar">
+    <h5>{% block page_title %}대시보드{% endblock %}</h5>
+    <span id="clock" class="text-muted" style="font-size:13px;"></span>
+  </div>
+  <div class="content-area">
+    {% block content %}{% endblock %}
+  </div>
+</div>
+
+<!-- 실시간 로그 패널 -->
+<div id="log-panel">
+  <div class="panel-header">
+    <span><i class="bi bi-terminal me-2"></i>실시간 로그</span>
+    <button class="btn btn-sm btn-outline-secondary py-0 px-2" onclick="toggleLogPanel(false)" style="font-size:12px;">닫기</button>
+  </div>
+  <div id="log-output"></div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+  // 시계
+  function updateClock() {
+    const d = new Date();
+    document.getElementById('clock').textContent = d.toLocaleString('ko-KR');
+  }
+  setInterval(updateClock, 1000);
+  updateClock();
+
+  // 로그 패널
+  let logEs = null;
+  function toggleLogPanel(show) {
+    const panel = document.getElementById('log-panel');
+    if (show === undefined) show = !panel.classList.contains('show');
+    panel.classList.toggle('show', show);
+    if (show && !logEs) startLogStream();
+  }
+
+  function startLogStream() {
+    if (logEs) return;
+    logEs = new EventSource('/api/logs');
+    logEs.onmessage = (e) => {
+      const rec = JSON.parse(e.data);
+      const div = document.getElementById('log-output');
+      const line = document.createElement('div');
+      line.className = 'log-' + rec.level;
+      line.textContent = rec.msg;
+      div.appendChild(line);
+      div.scrollTop = div.scrollHeight;
+    };
+    logEs.onerror = () => {
+      logEs.close(); logEs = null;
+    };
+  }
+</script>
+{% block scripts %}{% endblock %}
+</body>
+</html>

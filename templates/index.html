@@ -1,0 +1,240 @@
+{% extends "base.html" %}
+
+{% block title %}대시보드 — 건설안전 뉴스레터{% endblock %}
+{% block page_title %}대시보드{% endblock %}
+
+{% block content %}
+
+<!-- 상태 카드 행 -->
+<div class="row g-3 mb-4">
+
+  <div class="col-6 col-md-3">
+    <div class="stat-card d-flex align-items-center gap-3">
+      <div class="icon-box" style="background:#eaf3fb;color:#2e6da4;"><i class="bi bi-newspaper"></i></div>
+      <div>
+        <div class="label">수집된 기사</div>
+        <div class="value" id="stat-count">{{ articles|length }}</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-6 col-md-3">
+    <div class="stat-card d-flex align-items-center gap-3">
+      <div class="icon-box" style="background:#fef3c7;color:#d97706;"><i class="bi bi-send-check"></i></div>
+      <div>
+        <div class="label">마지막 발송</div>
+        <div class="value" id="stat-last" style="font-size:14px;">
+          {% if last_sent %}{{ last_sent.strftime('%m/%d %H:%M') }}{% else %}—{% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-6 col-md-3">
+    <div class="stat-card d-flex align-items-center gap-3">
+      <div class="icon-box" style="background:#f0fdf4;color:#16a34a;"><i class="bi bi-calendar-event"></i></div>
+      <div>
+        <div class="label">다음 발송 예정</div>
+        <div class="value" id="stat-next" style="font-size:14px;">
+          {% if next_run %}{{ next_run.strftime('%m/%d %H:%M') }}{% else %}—{% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-6 col-md-3">
+    <div class="stat-card d-flex align-items-center gap-3">
+      <div class="icon-box" style="background:#fdf2f8;color:#9333ea;"><i class="bi bi-clock-history"></i></div>
+      <div>
+        <div class="label">스케줄러</div>
+        <div class="value" id="stat-sched" style="font-size:15px;">
+          {% if scheduler_on %}
+            <span class="badge bg-success" style="font-size:13px;">ON</span>
+          {% else %}
+            <span class="badge bg-secondary" style="font-size:13px;">OFF</span>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 액션 버튼 -->
+<div class="d-flex flex-wrap gap-2 mb-4">
+  <button class="btn btn-primary" id="btn-run" onclick="runNow()">
+    <i class="bi bi-send me-1"></i> 지금 발송
+  </button>
+  <button class="btn btn-outline-primary" onclick="crawlOnly()">
+    <i class="bi bi-arrow-clockwise me-1"></i> 뉴스 수집만
+  </button>
+  <button class="btn btn-outline-secondary" onclick="openPreview()">
+    <i class="bi bi-eye me-1"></i> 미리보기
+  </button>
+  <button class="btn btn-outline-secondary" onclick="toggleLogPanel()">
+    <i class="bi bi-terminal me-1"></i> 로그 패널
+  </button>
+  <div id="scheduler-btns" class="ms-auto d-flex gap-2">
+    {% if scheduler_on %}
+    <button class="btn btn-sm btn-outline-danger" onclick="schedControl('stop')">
+      <i class="bi bi-stop-circle me-1"></i> 스케줄러 중지
+    </button>
+    {% else %}
+    <button class="btn btn-sm btn-outline-success" onclick="schedControl('start')">
+      <i class="bi bi-play-circle me-1"></i> 스케줄러 시작
+    </button>
+    {% endif %}
+  </div>
+</div>
+
+<!-- 뉴스 목록 테이블 -->
+<div class="card border-0 shadow-sm" style="border-radius:12px;">
+  <div class="card-header bg-white d-flex align-items-center justify-content-between py-3 px-4"
+       style="border-radius:12px 12px 0 0; border-bottom:1px solid #e8ecf0;">
+    <span style="font-weight:700;font-size:15px;color:#1e293b;">
+      <i class="bi bi-list-ol me-2 text-primary"></i>수집된 뉴스 목록
+    </span>
+    <span class="text-muted" style="font-size:12px;">조회수 기준 내림차순</span>
+  </div>
+  <div class="card-body p-0">
+    <div class="table-responsive">
+      <table class="table news-table mb-0" id="news-table">
+        <thead class="table-light">
+          <tr>
+            <th class="ps-4" style="width:50px;">순위</th>
+            <th>제목</th>
+            <th style="width:110px;">출처</th>
+            <th style="width:100px;">날짜</th>
+            <th style="width:90px;">조회수</th>
+          </tr>
+        </thead>
+        <tbody id="news-tbody">
+          {% if articles %}
+            {% for a in articles %}
+            <tr>
+              <td class="ps-4">
+                <span class="rank-badge rank-{% if loop.index <= 3 %}{{ loop.index }}{% else %}other{% endif %}">
+                  {{ loop.index }}
+                </span>
+              </td>
+              <td>
+                <a href="{{ a.url }}" target="_blank" class="text-decoration-none"
+                   style="color:#1a3c5e;font-weight:600;">{{ a.title }}</a>
+                {% if a.summary %}
+                <div class="text-muted" style="font-size:11px;margin-top:2px;">
+                  {{ a.summary[:80] }}{% if a.summary|length > 80 %}…{% endif %}
+                </div>
+                {% endif %}
+              </td>
+              <td><span class="source-badge">{{ a.source }}</span></td>
+              <td class="text-muted">{{ a.date.strftime('%Y.%m.%d') }}</td>
+              <td>
+                {% if a.view_count > 0 %}
+                  <span style="color:#2e6da4;font-weight:600;">{{ '{:,}'.format(a.view_count) }}</span>
+                {% else %}
+                  <span class="text-muted">—</span>
+                {% endif %}
+              </td>
+            </tr>
+            {% endfor %}
+          {% else %}
+            <tr>
+              <td colspan="5" class="text-center py-5 text-muted">
+                <i class="bi bi-inbox" style="font-size:32px;display:block;margin-bottom:8px;opacity:.4;"></i>
+                뉴스를 아직 수집하지 않았습니다.<br>
+                <button class="btn btn-sm btn-primary mt-3" onclick="crawlOnly()">
+                  <i class="bi bi-arrow-clockwise me-1"></i> 지금 수집하기
+                </button>
+              </td>
+            </tr>
+          {% endif %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- 뉴스레터 미리보기 모달 -->
+<div class="modal fade" id="previewModal" tabindex="-1">
+  <div class="modal-dialog modal-xl modal-dialog-scrollable">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h6 class="modal-title"><i class="bi bi-envelope me-2"></i>뉴스레터 미리보기</h6>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body p-0" style="height:70vh;">
+        <iframe id="preview-frame" src="" width="100%" height="100%" style="border:none;"></iframe>
+      </div>
+    </div>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+  const previewModal = new bootstrap.Modal(document.getElementById('previewModal'));
+
+  function showToast(msg, type='success') {
+    const t = document.createElement('div');
+    t.className = `alert alert-${type} position-fixed shadow`;
+    t.style.cssText = 'top:16px;right:16px;z-index:9999;min-width:260px;font-size:14px;';
+    t.innerHTML = msg;
+    document.body.appendChild(t);
+    setTimeout(() => t.remove(), 3500);
+  }
+
+  function runNow() {
+    if (!confirm('지금 바로 뉴스를 수집하고 이메일을 발송할까요?')) return;
+    toggleLogPanel(true);
+    document.getElementById('btn-run').disabled = true;
+    fetch('/api/run-now', { method: 'POST' })
+      .then(r => r.json())
+      .then(() => {
+        showToast('<i class="bi bi-check2-circle me-2"></i>파이프라인이 시작되었습니다. 로그를 확인하세요.');
+        setTimeout(() => {
+          document.getElementById('btn-run').disabled = false;
+          refreshStatus();
+        }, 3000);
+      });
+  }
+
+  function crawlOnly() {
+    toggleLogPanel(true);
+    showToast('<i class="bi bi-arrow-clockwise me-2"></i>뉴스 수집을 시작합니다...');
+    fetch('/api/crawl')
+      .then(() => {
+        setTimeout(() => {
+          location.reload();
+        }, 8000);
+      });
+  }
+
+  function openPreview() {
+    document.getElementById('preview-frame').src = '/api/preview';
+    previewModal.show();
+  }
+
+  function schedControl(action) {
+    fetch(`/api/scheduler/${action}`, { method: 'POST' })
+      .then(r => r.json())
+      .then(() => {
+        showToast(action === 'start' ? '스케줄러가 시작되었습니다.' : '스케줄러가 중지되었습니다.');
+        setTimeout(() => location.reload(), 1000);
+      });
+  }
+
+  function refreshStatus() {
+    fetch('/api/status')
+      .then(r => r.json())
+      .then(s => {
+        document.getElementById('stat-count').textContent = s.article_count;
+        if (s.last_sent) {
+          const d = new Date(s.last_sent);
+          document.getElementById('stat-last').textContent =
+            `${String(d.getMonth()+1).padStart(2,'0')}/${String(d.getDate()).padStart(2,'0')} ` +
+            `${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
+        }
+      });
+  }
+</script>
+{% endblock %}
